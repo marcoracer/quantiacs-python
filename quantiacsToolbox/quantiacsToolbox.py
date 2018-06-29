@@ -1,8 +1,8 @@
 import traceback
 import json
 import imp
-import urllib
-import urllib2
+from urllib.request import urlopen, Request
+from urllib.parse import urlencode
 import webbrowser
 import re
 import datetime
@@ -23,8 +23,8 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from matplotlib import style
 import matplotlib.pyplot as plt
 
-import Tkinter as tk
-import ttk
+import tkinter as tk
+from tkinter import ttk
 
 
 def loadData(marketList=None, dataToLoad=None, refresh=False, beginInSample=None, endInSample=None, dataDir = 'tickerData'):
@@ -45,11 +45,11 @@ def loadData(marketList=None, dataToLoad=None, refresh=False, beginInSample=None
     Copyright Quantiacs LLC - March 2015
     '''
     if marketList is None:
-        print "warning: no markets supplied"
+        print("warning: no markets supplied")
         return
 
     dataToLoad = set(dataToLoad)
-    requiredData = set(['DATE', 'OPEN', 'HIGH', 'LOW', 'CLOSE', 'P', 'RINFO', 'p'])
+    requiredData = {'DATE', 'OPEN', 'HIGH', 'LOW', 'CLOSE', 'P', 'RINFO', 'p'}
     fieldNames = set()
 
     dataToLoad.update(requiredData)
@@ -66,25 +66,19 @@ def loadData(marketList=None, dataToLoad=None, refresh=False, beginInSample=None
         # check to see if market data is present. If not (or refresh is true), download data from quantiacs.
         if not os.path.isfile(path) or refresh:
             try:
-                if False: #sys.version_info > (2,7,9):
-                    gcontext = ssl.SSLContext(ssl.PROTOCOL_TLSv1)
-                    data = urllib.urlopen('https://www.quantiacs.com/data/' +
-                                          marketList[j]+'.txt',
-                                          context=gcontext).read()
-                else:
-                    data = urllib.urlopen('https://www.quantiacs.com/data/' +
+                data = urlopen('https://www.quantiacs.com/data/' +
                                           marketList[j]+'.txt').read()
                 with open(path, 'w') as dataFile:
                     dataFile.write(data)
-                print 'Downloading ' + marketList[j]
+                print('Downloading ' + marketList[j])
 
             except:
-                print 'Unable to download ' + marketList[j]
+                print('Unable to download ' + marketList[j])
                 marketList.remove(marketList[j])
             finally:
                 dataFile.close()
 
-    print 'Loading Data...'
+    print('Loading Data...')
     sys.stdout.flush()
     dataDict = {}
     largeDateRange = range(datetime.datetime(1990, 1, 1).toordinal(),
@@ -122,19 +116,13 @@ def loadData(marketList=None, dataToLoad=None, refresh=False, beginInSample=None
         # check to see if data is present. If not (or refresh is true), download data from quantiacs.
         if not os.path.isfile(filePath) or refresh:
             try:
-                if False: #sys.version_info > (2,7,9):
-                    gcontext = ssl.SSLContext(ssl.PROTOCOL_TLSv1)
-                    data = urllib.urlopen('https://www.quantiacs.com/data/' +
-                                          additionData+'.txt',
-                                          context=gcontext).read()
-                else:
-                    data = urllib.urlopen('https://www.quantiacs.com/data/' +
+                data = urlopen('https://www.quantiacs.com/data/' +
                                           additionData+'.txt').read()
                 with open(filePath, 'w') as dataFile:
                     dataFile.write(data)
-                print 'Downloading ' + additionData
+                print('Downloading ' + additionData)
             except:
-                print 'Unable to download ' + additionData
+                print('Unable to download ' + additionData)
                 additionDataFailed.add(additionData)
                 continue
             finally:
@@ -196,8 +184,8 @@ def loadData(marketList=None, dataToLoad=None, refresh=False, beginInSample=None
 
     dataDict['OPEN'], dataDict['HIGH'], dataDict['LOW'] = fillwith(dataDict['OPEN'],dataDict['CLOSE']), fillwith(dataDict['HIGH'],dataDict['CLOSE']), fillwith(dataDict['LOW'],dataDict['CLOSE'])
 
-    print '\bDone! \n',
-    sys.stdout.flush()
+    print('\bDone! \n',
+    sys.stdout.flush())
 
     return dataDict
 
@@ -238,8 +226,8 @@ def runts(tradingSystem, plotEquity=True, reloadData=False, state={}, sourceData
     Copyright Quantiacs LLC - March 2015
     '''
 
-    errorlog=[]
-    ret={}
+    errorlog = []
+    ret = {}
 
     if type(tradingSystem) is str:
         tradingSystem = tradingSystem.replace('\\', '/')
@@ -263,38 +251,38 @@ def runts(tradingSystem, plotEquity=True, reloadData=False, state={}, sourceData
         try:
             TSobject = imp.load_source('tradingSystemModule', filePath)
         except Exception as e:
-            print 'Error loading trading system'
-            print str(e)
-            print traceback.format_exc()
+            print('Error loading trading system')
+            print(str(e))
+            print(traceback.format_exc())
             return
 
         try:
             settings = TSobject.mySettings()
         except Exception as e:
-            print "Unable to load settings. Please ensure your settings definition is correct"
-            print str(e)
-            print traceback.format_exc()
+            print("Unable to load settings. Please ensure your settings definition is correct")
+            print(str(e))
+            print(traceback.format_exc())
             return
 
     else:
-        print "Please input your trading system's file path or a callable object."
+        print("Please input your trading system's file path or a callable object.")
         return
 
     if isinstance(state, dict):
         if 'save' not in state:
-            state['save']=False
+            state['save'] = False
         if 'resume' not in state:
-            state['resume']=False
+            state['resume'] = False
         if 'runtimeInterrupt' not in state:
             state['runtimeInterrupt'] = False
     else:
-        print 'state variable is not a dict'
+        print('state variable is not a dict')
 
     # get boolean index of futures
     futuresIx = np.array(map(lambda string:bool(re.match("F_",string)),settings['markets']))
 
     # get data fields and extract them.
-    requiredData = set(['DATE','OPEN','HIGH', 'LOW', 'CLOSE', 'P','RINFO','p'])
+    requiredData = {'DATE','OPEN','HIGH', 'LOW', 'CLOSE', 'P','RINFO','p'}
     dataToLoad = requiredData
 
     tsArgs = inspect.getargspec(TSobject.myTradingSystem)
@@ -308,26 +296,26 @@ def runts(tradingSystem, plotEquity=True, reloadData=False, state={}, sourceData
 
     if 'settingsCache' not in globals() or settingsCache != settings:
         if 'beginInSample' in settings and 'endInSample' in settings:
-            dataDict=loadData(settings['markets'],dataToLoad,reloadData, beginInSample = settings['beginInSample'], endInSample = settings['endInSample'], dataDir=sourceData)
+            dataDict = loadData(settings['markets'],dataToLoad,reloadData, beginInSample = settings['beginInSample'], endInSample = settings['endInSample'], dataDir=sourceData)
         elif 'beginInSample' in settings and 'endInSample' not in settings:
-            dataDict=loadData(settings['markets'],dataToLoad,reloadData, settings['beginInSample'], dataDir=sourceData)
+            dataDict = loadData(settings['markets'],dataToLoad,reloadData, settings['beginInSample'], dataDir=sourceData)
         elif 'endInSample' in settings and 'beginInSample' not in settings:
-            dataDict=loadData(settings['markets'],dataToLoad,reloadData, endInSample = settings['endInSample'], dataDir=sourceData)
+            dataDict = loadData(settings['markets'],dataToLoad,reloadData, endInSample = settings['endInSample'], dataDir=sourceData)
         else:
-            dataDict=loadData(settings['markets'],dataToLoad,reloadData, dataDir=sourceData)
+            dataDict = loadData(settings['markets'],dataToLoad,reloadData, dataDir=sourceData)
 
-        dataCache=deepcopy(dataDict)
+        dataCache = deepcopy(dataDict)
         settingsCache = deepcopy(settings)
 
     else:
-        print 'copying data from cache'
+        print('copying data from cache')
         settings= deepcopy(settingsCache)
         dataDict = deepcopy(dataCache)
 
-    print 'Evaluating Trading System'
+    print('Evaluating Trading System')
 
-    nMarkets=len(settings['markets'])
-    endLoop=len(dataDict['DATE'])
+    nMarkets = len(settings['markets'])
+    endLoop = len(dataDict['DATE'])
 
     if 'RINFO' in dataDict:
         Rix= dataDict['RINFO'] != 0
@@ -335,16 +323,16 @@ def runts(tradingSystem, plotEquity=True, reloadData=False, state={}, sourceData
         dataDict['RINFO'] = np.zeros(np.shape(dataDict['CLOSE']))
         Rix = np.zeros(np.shape(dataDict['CLOSE']))
 
-    dataDict['exposure']=np.zeros((endLoop,nMarkets))
-    dataDict['equity']=np.ones((endLoop,nMarkets))
+    dataDict['exposure'] = np.zeros((endLoop,nMarkets))
+    dataDict['equity'] = np.ones((endLoop,nMarkets))
     dataDict['fundEquity'] = np.ones((endLoop,1))
     realizedP = np.zeros((endLoop, nMarkets))
     returns = np.zeros((endLoop, nMarkets))
 
     sessionReturnTemp = np.append( np.empty((1,nMarkets))*np.nan,(( dataDict['CLOSE'][1:,:]- dataDict['OPEN'][1:,:]) / dataDict['CLOSE'][0:-1,:] ), axis =0 ).copy()
-    sessionReturn=np.nan_to_num( fillnans(sessionReturnTemp) )
-    gapsTemp=np.append(np.empty((1,nMarkets))*np.nan, (dataDict['OPEN'][1:,:]- dataDict['CLOSE'][:-1,:]-dataDict['RINFO'][1:,:].astype(float)) / dataDict['CLOSE'][:-1:],axis=0)
-    gaps=np.nan_to_num(fillnans(gapsTemp))
+    sessionReturn = np.nan_to_num( fillnans(sessionReturnTemp) )
+    gapsTemp = np.append(np.empty((1,nMarkets))*np.nan, (dataDict['OPEN'][1:,:]- dataDict['CLOSE'][:-1,:]-dataDict['RINFO'][1:,:].astype(float)) / dataDict['CLOSE'][:-1:],axis=0)
+    gaps = np.nan_to_num(fillnans(gapsTemp))
 
     # check if a default slippage is specified
     if False == settings.has_key('slippage'):
@@ -354,38 +342,38 @@ def runts(tradingSystem, plotEquity=True, reloadData=False, state={}, sourceData
     SLIPPAGE = np.nan_to_num(fillnans(slippageTemp))
 
     if 'lookback' not in settings:
-        startLoop=2
-        settings['lookback']=1
+        startLoop = 2
+        settings['lookback'] = 1
     else:
         startLoop= settings['lookback']-1
 
     # Server evaluation --- resumes for new day.
     if state['resume']:
         if 'evalData' in state:
-            ixOld= dataDict['DATE']<=state['evalData']['evalDate']
-            evalData=state['evalData']
+            ixOld= dataDict['DATE'] <= state['evalData']['evalDate']
+            evalData = state['evalData']
 
-            ixMapExposure=np.concatenate(([False,False],ixOld),axis=0)
-            dataDict['equity'][ixOld,:]=state['evalData']['marketEquity']
-            dataDict['exposure'][ixMapExposure,:]=state['evalData']['marketExposure']
+            ixMapExposure = np.concatenate(([False,False],ixOld),axis=0)
+            dataDict['equity'][ixOld,:] = state['evalData']['marketEquity']
+            dataDict['exposure'][ixMapExposure,:] = state['evalData']['marketExposure']
             dataDict['fundEquity'][ixOld,:] = state['evalData']['fundEquity']
 
             startLoop = np.shape(state['evalData']['fundDate'])[0]
             endLoop = np.shape(dataDict['DATE'])[0]
 
             print('Resuming'+tsName+' | computing '+str(endLoop-startLoop+1)+' new days')
-            settings= evalData['settings']
+            settings = evalData['settings']
 
     t0= time.time()
 
     # Loop through trading days
     for t in range(startLoop,endLoop):
-        todaysP= dataDict['exposure'][t-1,:]
+        todaysP = dataDict['exposure'][t-1,:]
         yesterdaysP = realizedP[t-2,:]
-        deltaP=todaysP-yesterdaysP
+        deltaP = todaysP-yesterdaysP
 
-        newGap=yesterdaysP * gaps[t,:]
-        newGap[np.isnan(newGap)]= 0
+        newGap = yesterdaysP * gaps[t,:]
+        newGap[np.isnan(newGap)] = 0
 
         newRet = todaysP * sessionReturn[t,:] - abs(deltaP * SLIPPAGE[t,:])
         newRet[np.isnan(newRet)] = 0
@@ -398,7 +386,7 @@ def runts(tradingSystem, plotEquity=True, reloadData=False, state={}, sourceData
 
         # Roll futures contracts.
         if np.any(Rix[t,:]):
-            delta=np.tile(dataDict['RINFO'][t,Rix[t,:]],(t,1))
+            delta = np.tile(dataDict['RINFO'][t,Rix[t,:]],(t,1))
             dataDict['CLOSE'][0:t,Rix[t,:]] = dataDict['CLOSE'][0:t,Rix[t,:]].copy() + delta.copy()
             dataDict['OPEN'][0:t,Rix[t,:]] = dataDict['OPEN'][0:t,Rix[t,:]].copy()  + delta.copy()
             dataDict['HIGH'][0:t,Rix[t,:]] = dataDict['HIGH'][0:t,Rix[t,:]].copy() + delta.copy()
@@ -408,18 +396,18 @@ def runts(tradingSystem, plotEquity=True, reloadData=False, state={}, sourceData
             argList= []
 
             for index in range(len(tsArgs)):
-                if tsArgs[index]=='settings':
+                if tsArgs[index] =='settings':
                     argList.append(settings)
                 elif tsArgs[index] == 'self':
                     continue
                 else:
                     argList.append(dataDict[tsArgs[index]][t- settings['lookback'] +1:t+1].copy())
 
-            position, settings= TSobject.myTradingSystem(*argList)
+            position, settings = TSobject.myTradingSystem(*argList)
         except:
-            print 'Error evaluating trading system'
-            print sys.exc_info()[0]
-            print traceback.format_exc()
+            print('Error evaluating trading system')
+            print(sys.exc_info()[0])
+            print(traceback.format_exc())
             errorlog.append(str(dataDict['DATE'][t])+ ': ' + str(sys.exc_info()[0]))
             dataDict['equity'][t:,:] = np.tile(dataDict['equity'][t,:],(endLoop-t,1))
             return
@@ -452,7 +440,7 @@ def runts(tradingSystem, plotEquity=True, reloadData=False, state={}, sourceData
     ret['returns'] = np.nan_to_num(returns).tolist()
 
     if errorlog:
-        print 'Error: {}'.format(errorlog)
+        print('Error: {}'.format(errorlog))
 
     if plotEquity:
         statistics = stats(fundequity)
@@ -463,16 +451,16 @@ def runts(tradingSystem, plotEquity=True, reloadData=False, state={}, sourceData
         statistics= stats(fundequity)
 
 
-    ret['tsName']=tsName
-    ret['fundDate']=dataDict['DATE'].tolist()
-    ret['fundEquity']=dataDict['fundEquity'].tolist()
-    ret['marketEquity']= dataDict['equity'].tolist()
+    ret['tsName'] = tsName
+    ret['fundDate'] = dataDict['DATE'].tolist()
+    ret['fundEquity'] = dataDict['fundEquity'].tolist()
+    ret['marketEquity'] = dataDict['equity'].tolist()
     ret['marketExposure'] = dataDict['exposure'].tolist()
-    ret['errorLog']=errorlog
-    ret['runtime']=runtime
-    ret['stats']=statistics
-    ret['settings']=settings
-    ret['evalDate']=dataDict['DATE'][t]
+    ret['errorLog'] = errorlog
+    ret['runtime'] = runtime
+    ret['stats'] = statistics
+    ret['settings'] = settings
+    ret['evalDate'] = dataDict['DATE'][t]
 
     if state['save']:
         with open(tsName+'.json', 'w+') as fileID:
@@ -631,7 +619,7 @@ def plotts(tradingSystem, equity,mEquity,exposure,settings,DATE,statistics,retur
     def plot2(indx_Exposure, indx_MarketRet):
         plt.clf()
 
-        MarketReturns = plt.subplot2grid((8,8), (0,0), colspan = 6, rowspan = 8)
+        MarketReturns = plt.subplot2grid((8,8), (0,0), colspan=6, rowspan=8)
         t = np.array(DATEord)
 
         if indx_Exposure == 2:
@@ -639,7 +627,7 @@ def plotts(tradingSystem, equity,mEquity,exposure,settings,DATE,statistics,retur
         else:
             mRet = np.cumprod(1+marketRet[indx_MarketRet + cashOffset])
 
-        MarketReturns.plot(t,mRet,'b',linewidth=0.5)
+        MarketReturns.plot(t, mRet, 'b',linewidth=0.5)
         statistics=stats(mRet)
         MarketReturns.set_ylabel('Market Returns')
 
@@ -817,11 +805,11 @@ def stats(equityCurve):
     '''
     returns = (equityCurve[1:]-equityCurve[:-1])/equityCurve[:-1]
 
-    volaDaily=np.std(returns)
-    volaYearly=np.sqrt(252)*volaDaily
+    volaDaily = np.std(returns)
+    volaYearly = np.sqrt(252)*volaDaily
 
-    index=np.cumprod(1+returns)
-    indexEnd=index[-1]
+    index = np.cumprod(1+returns)
+    indexEnd = index[-1]
 
     returnDaily = np.exp(np.log(indexEnd)/returns.shape[0])-1
     returnYearly = (1+returnDaily)**252-1
@@ -913,36 +901,36 @@ def submit(tradingSystem, tsName):
         returns True if upload was successful, False otherwise.
 
     '''
-    from version import __version__
+    from .version import __version__
 
 
     if os.path.isfile(tradingSystem) and os.access(tradingSystem, os.R_OK):
-        filePathFlag=True
-        filePath=tradingSystem
-        fileFolder, fileName=os.path.split(filePath)
+        filePathFlag = True
+        filePath = tradingSystem
+        fileFolder, fileName = os.path.split(filePath)
 
     else:
-        print "Please input the your trading system's file path."
+        print("Please input the your trading system's file path.")
 
-    toolboxPath=os.path.realpath(__file__)
-    toolboxDir,Nothing=os.path.split(toolboxPath)
+    toolboxPath = os.path.realpath(__file__)
+    toolboxDir,Nothing = os.path.split(toolboxPath)
 
-    print "Submitting File..."
-    fid=open(filePath)
-    fileText=fid.read()
+    print("Submitting File...")
+    fid = open(filePath)
+    fileText = fid.read()
     fid.close()
 
     if sys.version_info > (2,7,9):
         uploadContext = ssl.SSLContext(ssl.PROTOCOL_TLSv1)
-        submissionUrl='https://www.quantiacs.com/quantnetsite/UploadTradingSystem.aspx'
-        data=urllib.urlencode({'fileName':fileName[:-3],'name':tsName,'data':fileText, 'version':__version__})
-        req = urllib2.Request(submissionUrl, data)
-        guid= urllib2.urlopen(req, context = uploadContext)
+        submissionUrl = 'https://www.quantiacs.com/quantnetsite/UploadTradingSystem.aspx'
+        data = urlencode({'fileName':fileName[:-3],'name':tsName,'data':fileText, 'version':__version__})
+        req = Request(submissionUrl, data)
+        guid = urlopen(req, context = uploadContext)
     else:
-        submissionUrl='http://www.quantiacs.com/quantnetsite/UploadTradingSystem.aspx'
-        data=urllib.urlencode({'fileName':fileName[:-3],'name':tsName,'data':fileText, 'version':__version__})
-        req = urllib2.Request(submissionUrl, data)
-        guid= urllib2.urlopen(req,)
+        submissionUrl = 'http://www.quantiacs.com/quantnetsite/UploadTradingSystem.aspx'
+        data = urlencode({'fileName':fileName[:-3],'name':tsName,'data':fileText, 'version':__version__})
+        req = Request(submissionUrl, data)
+        guid = urlopen(req,)
 
 
     successPage = guid.read()
@@ -987,9 +975,9 @@ def computeFees(equityCurve, managementFee,performanceFee):
             iPerf = ret[k] / iFix
             pFee[k] = (iPerf - 1) * performanceFee * iFix * equityCurve[0][0]
             iPerf = 1 + (iPerf - 1) * (1-performanceFee)
-            r=np.append(r,iPerf * iFix)
+            r = np.append(r,iPerf * iFix)
         else:
-            r=np.append(r,ret[k])
+            r = np.append(r,ret[k])
         if np.size(r)>0:
             last = r[-1] * last
         if last > high:
@@ -1036,9 +1024,9 @@ def fillwith(field, lookup):
     '''
 
     out = field.astype(float)
-    nanPos= np.where(np.isnan(out))
-    nanRow=nanPos[0]
-    nanCol=nanPos[1]
+    nanPos = np.where(np.isnan(out))
+    nanRow = nanPos[0]
+    nanCol = nanPos[1]
 
     for i in range(len(nanRow)):
         out[nanRow[i],nanCol[i]] = lookup[nanRow[i]-1,nanCol[i]]
@@ -1062,10 +1050,10 @@ def updateCheck():
         returns False if version is the same
     '''
 
-    from version import __version__
+    from .version import __version__
     updateStr = ''
     try:
-        toolboxJson = urllib.urlopen('https://pypi.python.org/pypi/quantiacsToolbox/json')
+        toolboxJson = urlopen('https://pypi.python.org/pypi/quantiacsToolbox/json')
     except Exception as e:
         return False
 
